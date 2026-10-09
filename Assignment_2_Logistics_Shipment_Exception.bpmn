@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+ xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+ xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+ xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ id="Definitions_LogisticsShipmentException" targetNamespace="http://example.com/bpmn">
+ <bpmn:process id="LogisticsShipmentException" name="Logistics & Shipment Exception Management" isExecutable="true">
+  <bpmn:laneSet id="LaneSet_1"><bpmn:lane id="L6" name="Shipper / Customer"><bpmn:flowNodeRef>S2</bpmn:flowNodeRef><bpmn:flowNodeRef>B1</bpmn:flowNodeRef><bpmn:flowNodeRef>B10</bpmn:flowNodeRef></bpmn:lane><bpmn:lane id="L7" name="Control Tower / Dispatcher"><bpmn:flowNodeRef>B3</bpmn:flowNodeRef><bpmn:flowNodeRef>B14</bpmn:flowNodeRef></bpmn:lane><bpmn:lane id="L8" name="Pickup Agent"><bpmn:flowNodeRef>B4</bpmn:flowNodeRef><bpmn:flowNodeRef>T3</bpmn:flowNodeRef></bpmn:lane><bpmn:lane id="L9" name="Hub / Warehouse"><bpmn:flowNodeRef>B6</bpmn:flowNodeRef><bpmn:flowNodeRef>B11</bpmn:flowNodeRef><bpmn:flowNodeRef>B12</bpmn:flowNodeRef><bpmn:flowNodeRef>B13</bpmn:flowNodeRef><bpmn:flowNodeRef>B15</bpmn:flowNodeRef><bpmn:flowNodeRef>T4</bpmn:flowNodeRef><bpmn:flowNodeRef>M1</bpmn:flowNodeRef></bpmn:lane><bpmn:lane id="L10" name="Delivery Agent"><bpmn:flowNodeRef>B7</bpmn:flowNodeRef><bpmn:flowNodeRef>B8</bpmn:flowNodeRef></bpmn:lane><bpmn:lane id="L11" name="Recipient"></bpmn:lane><bpmn:lane id="L12" name="Claims Department"><bpmn:flowNodeRef>B13</bpmn:flowNodeRef></bpmn:lane></bpmn:laneSet>
+  <bpmn:startEvent id="S2" name="Shipment booked"/>
+<bpmn:userTask id="B1" name="Create shipment booking"/>
+<bpmn:serviceTask id="B2" name="Validate address, weight and service"/>
+<bpmn:exclusiveGateway id="G5" name="Booking valid?"/>
+<bpmn:serviceTask id="B3" name="Schedule pickup and assign driver"/>
+<bpmn:userTask id="B4" name="Collect parcel and scan"/>
+<bpmn:parallelGateway id="G6" name="Move and update tracking"/>
+<bpmn:sendTask id="B5" name="Update tracking and notify shipper"/>
+<bpmn:subProcess id="B6" name="Hub sorting and line-haul"/>
+<bpmn:sendTask id="B7" name="Notify recipient for delivery"/>
+<bpmn:userTask id="B8" name="Deliver parcel and capture proof"/>
+<bpmn:exclusiveGateway id="G7" name="Delivery successful?"/>
+<bpmn:serviceTask id="B9" name="Close shipment and invoice"/>
+<bpmn:endEvent id="E4" name="Shipment delivered"/>
+<bpmn:endEvent id="E5" name="Returned to sender"/>
+<bpmn:endEvent id="E6" name="Closed as lost"/>
+<bpmn:userTask id="B10" name="Correct address / documents"/>
+<bpmn:subProcess id="B11" name="Trace lost parcel"/>
+<bpmn:userTask id="B12" name="Inspect damaged parcel"/>
+<bpmn:subProcess id="B13" name="Claims handling"/>
+<bpmn:userTask id="B14" name="Reroute / assign alternate vehicle"/>
+<bpmn:userTask id="B15" name="Request customs documents"/>
+<bpmn:boundaryEvent id="T3" attachedToRef="B4" cancelActivity="false" name="Pickup problem"><bpmn:timerEventDefinition/></bpmn:boundaryEvent>
+<bpmn:boundaryEvent id="T4" attachedToRef="B6" cancelActivity="false" name="No scan for 48 hours"><bpmn:timerEventDefinition/></bpmn:boundaryEvent>
+<bpmn:boundaryEvent id="M1" attachedToRef="B6" cancelActivity="true" name="Cancellation after dispatch"><bpmn:messageEventDefinition/></bpmn:boundaryEvent>
+  <bpmn:sequenceFlow id="g1" sourceRef="S2" targetRef="B1"/>
+<bpmn:sequenceFlow id="g2" sourceRef="B1" targetRef="B2"/>
+<bpmn:sequenceFlow id="g3" sourceRef="B2" targetRef="G5"/>
+<bpmn:sequenceFlow id="g4" sourceRef="G5" targetRef="B3"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${valid}</bpmn:conditionExpression></bpmn:sequenceFlow>
+<bpmn:sequenceFlow id="g5" sourceRef="G5" targetRef="B10"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${!valid}</bpmn:conditionExpression></bpmn:sequenceFlow>
+<bpmn:sequenceFlow id="g6" sourceRef="B10" targetRef="B2"/>
+<bpmn:sequenceFlow id="g7" sourceRef="B3" targetRef="B4"/>
+<bpmn:sequenceFlow id="g8" sourceRef="B4" targetRef="G6"/>
+<bpmn:sequenceFlow id="g9" sourceRef="G6" targetRef="B5"/>
+<bpmn:sequenceFlow id="g10" sourceRef="G6" targetRef="B6"/>
+<bpmn:sequenceFlow id="g11" sourceRef="B5" targetRef="B6"/>
+<bpmn:sequenceFlow id="g12" sourceRef="B6" targetRef="B7"/>
+<bpmn:sequenceFlow id="g13" sourceRef="B7" targetRef="B8"/>
+<bpmn:sequenceFlow id="g14" sourceRef="B8" targetRef="G7"/>
+<bpmn:sequenceFlow id="g15" sourceRef="G7" targetRef="B9"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${delivered}</bpmn:conditionExpression></bpmn:sequenceFlow>
+<bpmn:sequenceFlow id="g16" sourceRef="G7" targetRef="E5"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${refused || unavailable}</bpmn:conditionExpression></bpmn:sequenceFlow>
+<bpmn:sequenceFlow id="g17" sourceRef="B9" targetRef="E4"/>
+<bpmn:sequenceFlow id="g18" sourceRef="T3" targetRef="B4"/>
+<bpmn:sequenceFlow id="g19" sourceRef="T4" targetRef="B11"/>
+<bpmn:sequenceFlow id="g20" sourceRef="B11" targetRef="E6"/>
+<bpmn:sequenceFlow id="g21" sourceRef="M1" targetRef="E5"/>
+<bpmn:sequenceFlow id="g22" sourceRef="B12" targetRef="B13"/>
+<bpmn:sequenceFlow id="g23" sourceRef="B14" targetRef="B6"/>
+<bpmn:sequenceFlow id="g24" sourceRef="B15" targetRef="B6"/>
+ </bpmn:process>
+</bpmn:definitions>

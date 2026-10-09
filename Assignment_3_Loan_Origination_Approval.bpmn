@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+ xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+ xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+ xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+ xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ id="Definitions_LoanOrigination"
+ targetNamespace="http://example.com/loan">
+
+  <bpmn:process id="LoanOriginationProcess" name="Loan Origination and Approval" isExecutable="true">
+
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="Lane_Applicant" name="Applicant">
+        <bpmn:flowNodeRef>StartEvent</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>SubmitApplication</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ResubmitDocuments</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>AcceptOffer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ESignAgreement</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>WithdrawEnd</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_LoanOfficer" name="Loan Officer">
+        <bpmn:flowNodeRef>ManualKYC</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ManualCreditCheck</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>VerifyIncome</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ReviewApplication</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>RequestDocuments</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Underwriter" name="Underwriter / Credit Committee">
+        <bpmn:flowNodeRef>RiskScoring</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>SeniorCommittee</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>CollateralValuation</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Fraud" name="Fraud &amp; Compliance Team">
+        <bpmn:flowNodeRef>FraudInvestigation</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_CreditBureau" name="Credit Bureau">
+        <bpmn:flowNodeRef>CreditBureauScore</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Operations" name="Operations / Disbursement">
+        <bpmn:flowNodeRef>GenerateOffer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>VerifyAccount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>DisburseFunds</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>CreateLoanAccount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>NotifyApplicant</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_CoreBanking" name="Core Banking System">
+        <bpmn:flowNodeRef>CoreBankingAccount</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="StartEvent" name="Application submitted"/>
+    <bpmn:userTask id="SubmitApplication" name="Submit application and documents"/>
+    <bpmn:serviceTask id="CheckDocuments" name="Check document completeness"/>
+    <bpmn:exclusiveGateway id="DocumentsOK" name="Documents complete?"/>
+    <bpmn:userTask id="RequestDocuments" name="Request missing documents"/>
+    <bpmn:intermediateCatchEvent id="DocumentTimer" name="7 days">
+      <bpmn:timerEventDefinition><bpmn:timeDuration>PT168H</bpmn:timeDuration></bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="ResubmitDocuments" name="Resubmit documents"/>
+    <bpmn:endEvent id="LapsedEnd" name="Application lapsed">
+      <bpmn:terminateEventDefinition/>
+    </bpmn:endEvent>
+
+    <bpmn:parallelGateway id="ParallelChecks" name="Run checks"/>
+    <bpmn:serviceTask id="KYCCheck" name="KYC verification"/>
+    <bpmn:serviceTask id="CreditBureauScore" name="Retrieve credit bureau score"/>
+    <bpmn:userTask id="VerifyIncome" name="Verify income / employment"/>
+    <bpmn:parallelGateway id="JoinChecks" name="Checks completed"/>
+
+    <bpmn:exclusiveGateway id="KYCResult" name="KYC matched?"/>
+    <bpmn:userTask id="ManualKYC" name="Manual KYC verification"/>
+    <bpmn:exclusiveGateway id="ManualKYCResult" name="KYC resolved?"/>
+    <bpmn:serviceTask id="FraudScreening" name="Fraud / AML screening"/>
+    <bpmn:exclusiveGateway id="FraudResult" name="Fraud / AML issue?"/>
+    <bpmn:userTask id="FraudInvestigation" name="Fraud &amp; compliance investigation"/>
+    <bpmn:exclusiveGateway id="FraudConfirmed" name="Issue confirmed?"/>
+    <bpmn:endEvent id="FraudRejectedEnd" name="Rejected - compliance"/>
+
+    <bpmn:serviceTask id="RiskScoring" name="Eligibility and risk scoring"/>
+    <bpmn:exclusiveGateway id="RiskDecision" name="Risk outcome"/>
+    <bpmn:userTask id="ManualCreditCheck" name="Manual credit check"/>
+    <bpmn:boundaryEvent id="CreditBureauTimeout" attachedToRef="CreditBureauScore" cancelActivity="true" name="Credit bureau unavailable">
+      <bpmn:timerEventDefinition><bpmn:timeDuration>PT1H</bpmn:timeDuration></bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:exclusiveGateway id="CreditResult" name="Credit acceptable?"/>
+    <bpmn:userTask id="ReviewApplication" name="Underwriter review and approve"/>
+    <bpmn:userTask id="SeniorCommittee" name="Senior credit committee review"/>
+    <bpmn:exclusiveGateway id="SeniorDecision" name="Approved?"/>
+    <bpmn:userTask id="CollateralValuation" name="Collateral valuation"/>
+    <bpmn:exclusiveGateway id="CollateralResult" name="Collateral acceptable?"/>
+    <bpmn:serviceTask id="GenerateOffer" name="Generate loan offer"/>
+    <bpmn:sendTask id="SendOffer" name="Send offer to applicant"/>
+    <bpmn:receiveTask id="AcceptOffer" name="Accept offer"/>
+    <bpmn:boundaryEvent id="OfferTimer" attachedToRef="AcceptOffer" cancelActivity="true" name="Offer expired">
+      <bpmn:timerEventDefinition><bpmn:timeDuration>PT360H</bpmn:timeDuration></bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:endEvent id="OfferExpiredEnd" name="Offer expired"/>
+
+    <bpmn:userTask id="ESignAgreement" name="E-sign loan agreement"/>
+    <bpmn:boundaryEvent id="ESignTimer" attachedToRef="ESignAgreement" cancelActivity="true" name="Signature timeout">
+      <bpmn:timerEventDefinition><bpmn:timeDuration>PT168H</bpmn:timeDuration></bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:serviceTask id="VerifyAccount" name="Verify bank account"/>
+    <bpmn:serviceTask id="DisburseFunds" name="Disburse funds"/>
+    <bpmn:exclusiveGateway id="DisbursementResult" name="Disbursement successful?"/>
+    <bpmn:serviceTask id="CreateLoanAccount" name="Create loan account"/>
+    <bpmn:serviceTask id="CoreBankingAccount" name="Record loan in core banking"/>
+    <bpmn:serviceTask id="NotifyApplicant" name="Notify applicant"/>
+    <bpmn:endEvent id="SuccessEnd" name="Loan disbursed"/>
+
+    <bpmn:endEvent id="RejectedEnd" name="Application rejected"/>
+    <bpmn:endEvent id="WithdrawEnd" name="Withdrawn"/>
+
+    <bpmn:sequenceFlow id="F1" sourceRef="StartEvent" targetRef="SubmitApplication"/>
+    <bpmn:sequenceFlow id="F2" sourceRef="SubmitApplication" targetRef="CheckDocuments"/>
+    <bpmn:sequenceFlow id="F3" sourceRef="CheckDocuments" targetRef="DocumentsOK"/>
+    <bpmn:sequenceFlow id="F4" sourceRef="DocumentsOK" targetRef="ParallelChecks"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">${documentsComplete}</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="F5" sourceRef="DocumentsOK" targetRef="RequestDocuments"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">${!documentsComplete}</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="F6" sourceRef="RequestDocuments" targetRef="DocumentTimer"/>
+    <bpmn:sequenceFlow id="F7" sourceRef="DocumentTimer" targetRef="ResubmitDocuments"/>
+    <bpmn:sequenceFlow id="F8" sourceRef="ResubmitDocuments" targetRef="CheckDocuments"/>
+
+    <bpmn:sequenceFlow id="F9" sourceRef="ParallelChecks" targetRef="KYCCheck"/>
+    <bpmn:sequenceFlow id="F10" sourceRef="ParallelChecks" targetRef="CreditBureauScore"/>
+    <bpmn:sequenceFlow id="F11" sourceRef="ParallelChecks" targetRef="VerifyIncome"/>
+    <bpmn:sequenceFlow id="F12" sourceRef="KYCCheck" targetRef="JoinChecks"/>
+    <bpmn:sequenceFlow id="F13" sourceRef="CreditBureauScore" targetRef="JoinChecks"/>
+    <bpmn:sequenceFlow id="F13b" sourceRef="CreditBureauTimeout" targetRef="ManualCreditCheck"/>
+    <bpmn:sequenceFlow id="F13c" sourceRef="ManualCreditCheck" targetRef="JoinChecks"/>
+    <bpmn:sequenceFlow id="F14" sourceRef="VerifyIncome" targetRef="JoinChecks"/>
+    <bpmn:sequenceFlow id="F15" sourceRef="JoinChecks" targetRef="KYCResult"/>
+    <bpmn:sequenceFlow id="F16" sourceRef="KYCResult" targetRef="ManualKYC"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">${!kycMatched}</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="F17" sourceRef="KYCResult" targetRef="FraudScreening"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">${kycMatched}</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="F18" sourceRef="ManualKYC" targetRef="ManualKYCResult"/>
+    <bpmn:sequenceFlow id="F19" sourceRef="ManualKYCResult" targetRef="FraudScreening"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">${kycResolved}</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="F20" sourceRef="ManualKYCResult" targetRef="RejectedEnd"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">${!kycResolved}</bpmn:conditionExpression></bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="F21" sourceRef="FraudScreening" targetRef="FraudResult"/>
+    <bpmn:sequenceFlow id="F22" sourceRef="FraudResult" targetRef="FraudInvestigation"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">${fraudFlag}</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="F23" sourceRef="FraudResult" targetRef="RiskScoring"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">${!fraudFlag}</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="F24" sourceRef="FraudInvestigation" targetRef="FraudConfirmed"/>
+    <bpmn:sequenceFlow id="F25" sourceRef="FraudConfirmed" targetRef="FraudRejectedEnd"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">${fraudConfirmed}</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="F26" sourceRef="FraudConfirmed" targetRef="RiskScoring"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">${!fraudConfirmed}</bpmn:conditionExpression></bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="F27" sourceRef="RiskScoring" targetRef="RiskDecision"/>
+    <bpmn:sequenceFlow id="F28" sourceRef="RiskDecision" targetRef="GenerateOffer"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">${riskOutcome=="APPROVE"}</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="F29" sourceRef="RiskDecision" targetRef="ReviewApplication"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">${riskOutcome=="REVIEW"}</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="F30" sourceRef="RiskDecision" targetRef="RejectedEnd"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">${riskOutcome=="REJECT"}</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="F31" sourceRef="ReviewApplication" targetRef="SeniorCommittee"/>
+    <bpmn:sequenceFlow id="F32" sourceRef="SeniorCommittee" targetRef="SeniorDecision"/>
+    <bpmn:sequenceFlow id="F33" sourceRef="SeniorDecision" targetRef="GenerateOffer"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">${seniorApproved}</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="F34" sourceRef="SeniorDecision" targetRef="RejectedEnd"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">${!seniorApproved}</bpmn:conditionExpression></bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="F35" sourceRef="GenerateOffer" targetRef="SendOffer"/>
+    <bpmn:sequenceFlow id="F36" sourceRef="SendOffer" targetRef="AcceptOffer"/>
+    <bpmn:sequenceFlow id="F37" sourceRef="AcceptOffer" targetRef="ESignAgreement"/>
+    <bpmn:sequenceFlow id="F38" sourceRef="OfferTimer" targetRef="OfferExpiredEnd"/>
+    <bpmn:sequenceFlow id="F39" sourceRef="ESignAgreement" targetRef="VerifyAccount"/>
+    <bpmn:sequenceFlow id="F40" sourceRef="ESignTimer" targetRef="SendOffer"/>
+    <bpmn:sequenceFlow id="F41" sourceRef="VerifyAccount" targetRef="DisburseFunds"/>
+    <bpmn:sequenceFlow id="F42" sourceRef="DisburseFunds" targetRef="DisbursementResult"/>
+    <bpmn:sequenceFlow id="F43" sourceRef="DisbursementResult" targetRef="CreateLoanAccount"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">${disbursementOK}</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="F44" sourceRef="DisbursementResult" targetRef="VerifyAccount"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">${!disbursementOK}</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="F45" sourceRef="CreateLoanAccount" targetRef="CoreBankingAccount"/>
+    <bpmn:sequenceFlow id="F45b" sourceRef="CoreBankingAccount" targetRef="NotifyApplicant"/>
+    <bpmn:sequenceFlow id="F46" sourceRef="NotifyApplicant" targetRef="SuccessEnd"/>
+
+    <bpmn:boundaryEvent id="WithdrawalBoundary" attachedToRef="SubmitApplication" cancelActivity="true" name="Applicant withdraws">
+      <bpmn:messageEventDefinition messageRef="WithdrawalMessage"/>
+    </bpmn:boundaryEvent>
+    <bpmn:message id="WithdrawalMessage" name="Withdrawal"/>
+
+    <bpmn:sequenceFlow id="F47" sourceRef="WithdrawalBoundary" targetRef="WithdrawEnd"/>
+
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="LoanOriginationProcess">
+      <bpmndi:BPMNShape id="Lane_Applicant_di" bpmnElement="Lane_Applicant"><dc:Bounds x="0" y="0" width="3000" height="120"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_LoanOfficer_di" bpmnElement="Lane_LoanOfficer"><dc:Bounds x="0" y="120" width="3000" height="120"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Underwriter_di" bpmnElement="Lane_Underwriter"><dc:Bounds x="0" y="240" width="3000" height="120"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Fraud_di" bpmnElement="Lane_Fraud"><dc:Bounds x="0" y="360" width="3000" height="120"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_CreditBureau_di" bpmnElement="Lane_CreditBureau"><dc:Bounds x="0" y="480" width="3000" height="120"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Operations_di" bpmnElement="Lane_Operations"><dc:Bounds x="0" y="600" width="3000" height="120"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_CoreBanking_di" bpmnElement="Lane_CoreBanking"><dc:Bounds x="0" y="720" width="3000" height="120"/></bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="StartEvent_di" bpmnElement="StartEvent"><dc:Bounds x="80" y="45" width="30" height="30"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubmitApplication_di" bpmnElement="SubmitApplication"><dc:Bounds x="150" y="30" width="130" height="60"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="CheckDocuments_di" bpmnElement="CheckDocuments"><dc:Bounds x="330" y="150" width="130" height="60"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DocumentsOK_di" bpmnElement="DocumentsOK"><dc:Bounds x="500" y="165" width="50" height="50"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="RequestDocuments_di" bpmnElement="RequestDocuments"><dc:Bounds x="590" y="150" width="130" height="60"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DocumentTimer_di" bpmnElement="DocumentTimer"><dc:Bounds x="760" y="165" width="36" height="36"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ResubmitDocuments_di" bpmnElement="ResubmitDocuments"><dc:Bounds x="830" y="30" width="130" height="60"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="LapsedEnd_di" bpmnElement="LapsedEnd"><dc:Bounds x="830" y="175" width="36" height="36"/></bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="ParallelChecks_di" bpmnElement="ParallelChecks"><dc:Bounds x="1000" y="165" width="50" height="50"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="KYCCheck_di" bpmnElement="KYCCheck"><dc:Bounds x="1090" y="130" width="130" height="60"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="CreditBureauScore_di" bpmnElement="CreditBureauScore"><dc:Bounds x="1090" y="500" width="130" height="60"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="VerifyIncome_di" bpmnElement="VerifyIncome"><dc:Bounds x="1090" y="150" width="130" height="60"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="CreditBureauTimeout_di" bpmnElement="CreditBureauTimeout"><dc:Bounds x="1150" y="555" width="36" height="36"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="JoinChecks_di" bpmnElement="JoinChecks"><dc:Bounds x="1260" y="165" width="50" height="50"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="KYCResult_di" bpmnElement="KYCResult"><dc:Bounds x="1340" y="165" width="50" height="50"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ManualKYC_di" bpmnElement="ManualKYC"><dc:Bounds x="1420" y="150" width="130" height="60"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ManualKYCResult_di" bpmnElement="ManualKYCResult"><dc:Bounds x="1590" y="165" width="50" height="50"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="FraudScreening_di" bpmnElement="FraudScreening"><dc:Bounds x="1670" y="370" width="130" height="60"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="FraudResult_di" bpmnElement="FraudResult"><dc:Bounds x="1840" y="375" width="50" height="50"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="FraudInvestigation_di" bpmnElement="FraudInvestigation"><dc:Bounds x="1920" y="390" width="140" height="60"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="FraudConfirmed_di" bpmnElement="FraudConfirmed"><dc:Bounds x="2100" y="375" width="50" height="50"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="FraudRejectedEnd_di" bpmnElement="FraudRejectedEnd"><dc:Bounds x="2180" y="405" width="36" height="36"/></bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="RiskScoring_di" bpmnElement="RiskScoring"><dc:Bounds x="1420" y="270" width="130" height="60"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="RiskDecision_di" bpmnElement="RiskDecision"><dc:Bounds x="1590" y="275" width="50" height="50"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReviewApplication_di" bpmnElement="ReviewApplication"><dc:Bounds x="1670" y="270" width="130" height="60"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SeniorCommittee_di" bpmnElement="SeniorCommittee"><dc:Bounds x="1840" y="270" width="140" height="60"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SeniorDecision_di" bpmnElement="SeniorDecision"><dc:Bounds x="2020" y="275" width="50" height="50"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="RejectedEnd_di" bpmnElement="RejectedEnd"><dc:Bounds x="2180" y="300" width="36" height="36"/></bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="GenerateOffer_di" bpmnElement="GenerateOffer"><dc:Bounds x="1420" y="630" width="130" height="60"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SendOffer_di" bpmnElement="SendOffer"><dc:Bounds x="1590" y="630" width="130" height="60"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="AcceptOffer_di" bpmnElement="AcceptOffer"><dc:Bounds x="1760" y="30" width="130" height="60"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="OfferTimer_di" bpmnElement="OfferTimer"><dc:Bounds x="1810" y="82" width="36" height="36"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="OfferExpiredEnd_di" bpmnElement="OfferExpiredEnd"><dc:Bounds x="1920" y="105" width="36" height="36"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ESignAgreement_di" bpmnElement="ESignAgreement"><dc:Bounds x="1930" y="30" width="130" height="60"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ESignTimer_di" bpmnElement="ESignTimer"><dc:Bounds x="1980" y="82" width="36" height="36"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="VerifyAccount_di" bpmnElement="VerifyAccount"><dc:Bounds x="2100" y="630" width="130" height="60"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DisburseFunds_di" bpmnElement="DisburseFunds"><dc:Bounds x="2260" y="630" width="130" height="60"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DisbursementResult_di" bpmnElement="DisbursementResult"><dc:Bounds x="2430" y="635" width="50" height="50"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="CreateLoanAccount_di" bpmnElement="CreateLoanAccount"><dc:Bounds x="2520" y="630" width="130" height="60"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="CoreBankingAccount_di" bpmnElement="CoreBankingAccount"><dc:Bounds x="2520" y="750" width="130" height="60"/></bpmndi:BPMNShape>
+<bpmndi:BPMNShape id="NotifyApplicant_di" bpmnElement="NotifyApplicant"><dc:Bounds x="2690" y="630" width="130" height="60"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SuccessEnd_di" bpmnElement="SuccessEnd"><dc:Bounds x="2860" y="645" width="36" height="36"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="WithdrawEnd_di" bpmnElement="WithdrawEnd"><dc:Bounds x="330" y="60" width="36" height="36"/></bpmndi:BPMNShape>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
