@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+ xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+ xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+ xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ id="Definitions_StudentProjectApproval" targetNamespace="http://example.com/bpmn">
+ <bpmn:process id="StudentProjectApproval" name="Student Project Approval & Allocation System" isExecutable="true">
+  <bpmn:laneSet id="LaneSet_1"><bpmn:lane id="L1" name="Student / Team"><bpmn:flowNodeRef>S1</bpmn:flowNodeRef><bpmn:flowNodeRef>A1</bpmn:flowNodeRef><bpmn:flowNodeRef>A3</bpmn:flowNodeRef></bpmn:lane><bpmn:lane id="L2" name="Project Coordinator"><bpmn:flowNodeRef>A4</bpmn:flowNodeRef><bpmn:flowNodeRef>A9</bpmn:flowNodeRef><bpmn:flowNodeRef>A13</bpmn:flowNodeRef></bpmn:lane><bpmn:lane id="L3" name="Review Committee (incl. HoD)"><bpmn:flowNodeRef>A6</bpmn:flowNodeRef><bpmn:flowNodeRef>T2</bpmn:flowNodeRef></bpmn:lane><bpmn:lane id="L4" name="Faculty Guide"><bpmn:flowNodeRef>A12</bpmn:flowNodeRef></bpmn:lane><bpmn:lane id="L5" name="Project Management System"><bpmn:flowNodeRef>A2</bpmn:flowNodeRef><bpmn:flowNodeRef>A5</bpmn:flowNodeRef><bpmn:flowNodeRef>A8</bpmn:flowNodeRef><bpmn:flowNodeRef>A10</bpmn:flowNodeRef><bpmn:flowNodeRef>A11</bpmn:flowNodeRef><bpmn:flowNodeRef>A14</bpmn:flowNodeRef><bpmn:flowNodeRef>A15</bpmn:flowNodeRef><bpmn:flowNodeRef>G1</bpmn:flowNodeRef><bpmn:flowNodeRef>G2</bpmn:flowNodeRef><bpmn:flowNodeRef>G3</bpmn:flowNodeRef><bpmn:flowNodeRef>G4</bpmn:flowNodeRef><bpmn:flowNodeRef>T1</bpmn:flowNodeRef><bpmn:flowNodeRef>E1</bpmn:flowNodeRef><bpmn:flowNodeRef>E2</bpmn:flowNodeRef><bpmn:flowNodeRef>E3</bpmn:flowNodeRef></bpmn:lane></bpmn:laneSet>
+  <bpmn:startEvent id="S1" name="Student decides to submit"/>
+<bpmn:userTask id="A1" name="Submit project proposal"/>
+<bpmn:serviceTask id="A2" name="Validate form and team rules"/>
+<bpmn:exclusiveGateway id="G1" name="Valid proposal?"/>
+<bpmn:userTask id="A3" name="Correct and resubmit proposal"/>
+<bpmn:userTask id="A4" name="Coordinator screens proposal"/>
+<bpmn:serviceTask id="A5" name="Check duplicate topic"/>
+<bpmn:userTask id="A6" name="Committee evaluates proposal"/>
+<bpmn:exclusiveGateway id="G2" name="Committee decision"/>
+<bpmn:userTask id="A7" name="Revise proposal"/>
+<bpmn:serviceTask id="A8" name="Check guide availability and workload"/>
+<bpmn:exclusiveGateway id="G3" name="Guide available?"/>
+<bpmn:userTask id="A9" name="Coordinator handles guide allocation"/>
+<bpmn:serviceTask id="A10" name="Allocate guide"/>
+<bpmn:sendTask id="A11" name="Send allocation request"/>
+<bpmn:receiveTask id="A12" name="Guide accepts request"/>
+<bpmn:exclusiveGateway id="G4" name="Guide accepts?"/>
+<bpmn:userTask id="A13" name="Choose another guide"/>
+<bpmn:sendTask id="A14" name="Notify student"/>
+<bpmn:serviceTask id="A15" name="Record allocation"/>
+<bpmn:endEvent id="E1" name="Project allocated"/>
+<bpmn:endEvent id="E2" name="Rejected"/>
+<bpmn:endEvent id="E3" name="Invalid team"/>
+<bpmn:boundaryEvent id="T1" attachedToRef="A1" cancelActivity="true" name="Submission deadline"><bpmn:timerEventDefinition/></bpmn:boundaryEvent>
+<bpmn:boundaryEvent id="T2" attachedToRef="A6" cancelActivity="false" name="Review SLA"><bpmn:timerEventDefinition/></bpmn:boundaryEvent>
+  <bpmn:sequenceFlow id="f1" sourceRef="S1" targetRef="A1"/>
+<bpmn:sequenceFlow id="f2" sourceRef="A1" targetRef="A2"/>
+<bpmn:sequenceFlow id="f3" sourceRef="A2" targetRef="G1"/>
+<bpmn:sequenceFlow id="f4" sourceRef="G1" targetRef="A4"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${valid}</bpmn:conditionExpression></bpmn:sequenceFlow>
+<bpmn:sequenceFlow id="f5" sourceRef="G1" targetRef="A3"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${!valid}</bpmn:conditionExpression></bpmn:sequenceFlow>
+<bpmn:sequenceFlow id="f6" sourceRef="A3" targetRef="A2"/>
+<bpmn:sequenceFlow id="f7" sourceRef="A4" targetRef="A5"/>
+<bpmn:sequenceFlow id="f8" sourceRef="A5" targetRef="A6"/>
+<bpmn:sequenceFlow id="f9" sourceRef="A6" targetRef="G2"/>
+<bpmn:sequenceFlow id="f10" sourceRef="G2" targetRef="A8"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${decision=="approve"}</bpmn:conditionExpression></bpmn:sequenceFlow>
+<bpmn:sequenceFlow id="f11" sourceRef="G2" targetRef="A7"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${decision=="revise"}</bpmn:conditionExpression></bpmn:sequenceFlow>
+<bpmn:sequenceFlow id="f12" sourceRef="G2" targetRef="E2"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${decision=="reject"}</bpmn:conditionExpression></bpmn:sequenceFlow>
+<bpmn:sequenceFlow id="f13" sourceRef="A7" targetRef="A6"/>
+<bpmn:sequenceFlow id="f14" sourceRef="A8" targetRef="G3"/>
+<bpmn:sequenceFlow id="f15" sourceRef="G3" targetRef="A10"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${guideAvailable}</bpmn:conditionExpression></bpmn:sequenceFlow>
+<bpmn:sequenceFlow id="f16" sourceRef="G3" targetRef="A9"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${!guideAvailable}</bpmn:conditionExpression></bpmn:sequenceFlow>
+<bpmn:sequenceFlow id="f17" sourceRef="A9" targetRef="A10"/>
+<bpmn:sequenceFlow id="f18" sourceRef="A10" targetRef="A11"/>
+<bpmn:sequenceFlow id="f19" sourceRef="A11" targetRef="A12"/>
+<bpmn:sequenceFlow id="f20" sourceRef="A12" targetRef="G4"/>
+<bpmn:sequenceFlow id="f21" sourceRef="G4" targetRef="A14"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${accepted}</bpmn:conditionExpression></bpmn:sequenceFlow>
+<bpmn:sequenceFlow id="f22" sourceRef="G4" targetRef="A13"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${!accepted}</bpmn:conditionExpression></bpmn:sequenceFlow>
+<bpmn:sequenceFlow id="f23" sourceRef="A13" targetRef="A8"/>
+<bpmn:sequenceFlow id="f24" sourceRef="A14" targetRef="A15"/>
+<bpmn:sequenceFlow id="f25" sourceRef="A15" targetRef="E1"/>
+<bpmn:sequenceFlow id="f26" sourceRef="T1" targetRef="E2"/>
+<bpmn:sequenceFlow id="f27" sourceRef="T2" targetRef="A6"/>
+ </bpmn:process>
+</bpmn:definitions>
